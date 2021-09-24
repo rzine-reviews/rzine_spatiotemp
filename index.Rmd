@@ -1,0 +1,910 @@
+---
+title: "Exploration spatio-temporelle d’objets géographiques ponctuels"
+subtitle: "L'exemple du patrimoine architectural toulousain"
+date: "`r Sys.Date()`"
+author: 
+ - name: Le Texier Marion
+   affiliation: Université Rouen Normandie, UMR 6266 IDEES
+logo: "figures/rzine.png"  
+output:
+  rzine::readrzine:
+    highlight: kate
+    number_sections: true
+csl: Rzine_citation.csl
+bibliography: biblio.bib
+nocite: |
+  @*
+link-citations: true
+# github: "rzine-reviews/MTA"
+# gitlab: "gitlab.huma-num.fr/rzine/help_rzine_publication"
+# doi: "10.5281/zenodo.4554776"
+# licence: "by-nc-sa"
+
+# Only Creative Commons Licence 
+# 5 possible choices : "by-nd", "by", "by-nc-sa", "by-nc","by-sa"
+---
+
+```{r setup, include=FALSE}
+
+## Global options
+knitr::opts_chunk$set(echo=TRUE,
+        	            cache=FALSE,
+                      prompt=FALSE,
+                      comment=NA,
+                      message=FALSE,
+                      warning=FALSE,
+                      class.source="bg-info",
+                      class.output="bg-warning")
+
+
+```
+
+# Introduction {-}
+
+Cette fiche rend compte d'une série de traitements permettant d'explorer la [base de données MERIMEE](https://www.culture.gouv.fr/Espace-documentation/Base-de-donnees-Culture/Merimee-une-base-de-donnees-du-patrimoine-monumental-francais-de-la-Prehistoire-a-nos-jours){target="_blank"} qui consigne l'ensemble des bâtiments classés aux monuments historiques. Nous prendrons l'exemple des fiches "Mérimée" du patrimoine architectural toulousain disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/base-merimee/).
+
+# Préparation de l'analyse
+
+## Librairies utilisées
+
+- `tidyverse` regroupe plusieurs librairies pour la manipulation de données, dont `dplyr` 
+- `sf` permet de réaliser la manipulation et le traitement de données géographiques
+- `raster` permet la manipulation d'information stockée en mode raster (matrice de pixel)
+- `pracma` permet de réaliser des lissages par moyennes mobiles de différents types
+- `forecast` offre un ensemble de fonctions d'ajustement de séries temporelles
+- `ggplot2` pour la représentation graphique. C'est une librairie de référence avec sa popre syntaxe
+- `ggspatial` pour représenter des données spatiales. Syntaxe `ggplot2`
+- `ggmap` pour faire des cartes. Syntaxe `ggplot2`
+- `gganimate` (et sa dépendance `gifski`) permet de réaliser des cartes animées
+- `cowplot` offre des fonctionnalités pour combiner plusieurs graphiques
+- `rasterVis` permet la visualisation de raster
+- `leaflet` est une adaptation de la librairie javascript du même nom, permet de réaliser des cartes interactives
+- `osmdata` permet de télécharger et d'utiliser des données OpenStreetMap
+- `RColorBrewer` propose l'utilisation et la création de palette de couleurs
+- `plotly` permet la réalisation de représentations graphiques interactives
+
+
+Création d'un vecteur comportant tous les noms des packages nécessaires :   
+
+```{r, echo=TRUE, eval=TRUE}
+
+my_packages <- c("sf", 
+                  "dplyr",
+                  "tidyverse", 
+                  "pracma", 
+                  "forecast",
+                  "ggplot2", 
+                  "cowplot", 
+                  "leaflet", 
+                  "raster", 
+                  "rasterVis", 
+                  "ggspatial", 
+                  "ggmap", 
+                  "osmdata", 
+                  "gganimate", 
+                  "gifski", 
+                  "RColorBrewer",
+                  "plotly")
+
+
+```
+
+La fonction `installed.packages()` liste tous les packages déjà installés. Utilisons-la pour récupérer la liste des packages que vous allez devoir installer.
+
+
+```{r, echo=TRUE, eval=TRUE}
+
+missing_packages <- my_packages[!(my_packages %in% installed.packages()[,"Package"])]
+
+```
+
+
+
+Utilisons `install.packages()` pour installer les packages depuis le CRAN (*Comprehensive R Archive Network*). Le test conditionnel `if()` vérifie qu'il vous manque bien des packages avant de lancer l'installation.
+
+```{r, echo=TRUE, eval=TRUE}
+
+if(length(missing_packages)) install.packages(missing_packages)
+
+```
+
+Chargement de toutes les librairies à l'aide de la fonction `lapply()` qui permet d'appliquer la fonction `library()` à mon vecteur de noms de packages :
+
+```{r, echo=TRUE, eval=TRUE, message=FALSE, results='hide'}
+
+lapply(my_packages, library,  character.only = TRUE)
+
+```
+
+
+```{r, echo=FALSE, eval=TRUE}
+
+invisible(lapply(my_packages, library,  character.only = TRUE))
+
+```
+
+
+<br>
+
+## Les données
+
+
+<br>
+
+<p class="center"> [<img src="figures/zip.png" width="50"/> **Télécharger les données**](data.zip) </p>  
+
+<br>
+
+**Deux couches géographiques en format** ***shape*** **sont mises à votre disposition** :
+
+**1)** ***communes.shp*** :  Limites des communes de la métropole toulousaine récupérées sur [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/communes/)
+
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+com <- st_read("data/communes.shp", quiet=TRUE)
+par(mar=c(0,0,0,0))
+plot(st_geometry(com ))
+
+
+```
+
+<br>
+
+
+**2)** ***base-merimee.shp*** : Extraction de la [**BD Mérimée**](https://www.culture.gouv.fr/Espace-documentation/Base-de-donnees-Culture/Merimee-une-base-de-donnees-du-patrimoine-monumental-francais-de-la-Prehistoire-a-nos-jours){target="_blank"} mise à disposition sur [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/base-merimee/){target="_blank"}. Il s'agit d'une **couche géographique d'objets ponctuels**. **Chaque point est un monument du patrimoine architectural toulousain précisément géolocalisé dans l'espace.** 
+
+```{r, echo=FALSE, eval=TRUE, results="hide", message=FALSE, warning=FALSE}
+
+Merimee <- st_read("data/base-merimee.shp")
+par(mar=c(0,0,0,0))
+plot(st_geometry(Merimee), pch=20, cex=0.7, col="#cb2b2b70")
+
+
+```
+
+
+**Chaque monument est caractérisé par une cinquantaine de variables**. Extrait :
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+# install.packages("DT")
+library(DT)
+datatable(as.data.frame(Merimee[117:122,c(2,15,14,19,35,36,43)]))
+
+
+```
+
+
+
+<br>
+
+
+### Import
+
+**Les données géographiques stockées en format** ***shapefiles*** **s'importent très facilement avec la librairie** `sf`.    
+Ces données sont alors converties en objet *sf* (*simple feature dataframe*). Il s'agit tout simplement d'un tableau (*dataframe*) dans lequel chaque élement/ligne est associé à une géometrie. Ici, la colonne *geometry* (cf. ci-dessus) liste les coordonnées x/y des monuments localisés dans l'espace par un point.
+
+**Utilisez** `st_read()` **pour importer les données**.
+
+```{r, echo=TRUE, eval=TRUE, results="hide", message=FALSE, warning=FALSE}
+
+Merimee <- st_read("data/base-merimee.shp")
+
+```
+
+<br>
+
+### Caractéristique spatiale
+
+La fonction `summary()` permet d'obtenir un résumé de l'ensemble du tableau de données ou de certaines variables d'intérêt. Ici, elle permet de décrire la variable *geometry* qui contient la forme et la localisation de chaque élément du tableau.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+summary(Merimee$geometry)
+
+```
+
+<br>
+
+### Caractéristique temporelle
+
+La fonction `colnames()` renvoie le nom de l'ensemble des colonnes du tableau de données. 
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+colnames(Merimee)
+
+```
+
+La variable nommée *chpdate* **contient les informations sur la date de construction des bâtiments classés aux monuments historiques**. 
+
+
+Appliquons les fonctions `class()`, `head()` et `summary()` à cette variable pour en apprendre un peu plus.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+class(Merimee$chpdate)
+head(Merimee$chpdate)
+summary(Merimee$chpdate)
+
+
+```
+
+**Cette variable contient de nombreuses valeurs manquantes et plusieurs dates sont parfois renseignées.** 
+
+Pour ces raisons, R a automatiquement typé la variable en *factor* (catégorie) et non pas en *numeric*. Ainsi, la fonction summary() renvoie le nombre d'individus regroupés par catégories (*levels*) plutôt que de fournir un résumé de ses paramètres centraux et de dispersion. 
+
+
+<br>
+
+
+## Pré-traitements
+
+
+Dans le cadre de cette exploration, **nous allons supprimer les monuments sans date de construction et ne garder que la première date renseignée lorsque plusieurs périodes de construction sont proposées**. 
+
+La multiplication des opérations sur un même objet peut être facilitée grâce à l'utilisation de `tidyverse`, un ensemble d'extensions contenues dans une librairie, qui utilise une syntaxe particulière (*Sucre syntaxique*) qui rend le code plus agréable à écrire comme à lire. 
+
+
+Dans l'exemple ci-dessous, nous modifions la variable *chpdate* en deux temps : 
+
+1) Extraction des 4 premiers caractères de la variable *chpdate* avec la fonction `substr()`
+
+2) Transformation de cette chaîne de 4 caractères en nombre grâce à la fonction `as.integer()`
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee$chpdate <- substr(Merimee$chpdate, 1, 4) %>%
+  as.integer(Merimee$chpdate) 
+
+```
+
+
+Puis, **nous supprimons les lignes pour lesquelles l'année de construction est inconnue (NA)**, grâce aux fonctions `filter()` et `is.na()`. Notez que l'usage du `!` signifie ici "est différent de".
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee <- filter(Merimee, !is.na(Merimee$chpdate))
+
+summary(Merimee$chpdate)
+
+```
+
+Les bâtiments toulousains classés aux monuments historiques les plus anciens datent de `r min(Merimee$chpdate)`, alors que les plus récents ont été construits en `r max(Merimee$chpdate)`, soit une période de `r max(Merimee$chpdate)-min(Merimee$chpdate)` ans. 
+
+50% des bâtiments classés ont été construits avant `r median(Merimee$chpdate)`, un quart avant `r quantile(Merimee$chpdate, probs=c(0.25))` et un quart après `r quantile(Merimee$chpdate, probs=c(0.75))`.
+
+<br>
+
+
+# Exploration temporelle
+
+## Nombre de bâtiments par année
+
+Pour observer la distribution temporelle du patrimoine classé aux monuments historiques à Toulouse, commençons par comptabiliser le nombre de bâtiments par année de construction.
+
+**On regroupe les lignes par année, tout en comptabilisant le nombre de lignes regroupées**.
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee_year <- Merimee %>%
+  group_by(chpdate) %>%
+  summarize(nb = length(chpdate)) 
+
+summary(Merimee_year)
+
+```
+
+Il est intéressant de noter que le type d'objet *sf* est conservé malgré les importantes manipulations réalisées. Les géométries ont même été prises en compte. La variable *geometry* stocke désormais un ensemble de points (*MULTIPOINT*) décrivant la localisation de tous les batîments construits une même année.
+
+Les fonctions de la librairie `ggplot2` vont nous permettre d'en faire une représentation graphique.
+
+- `ggplot()` permet de construire un graphique croisant année de construction et nombre de bâtiments concernés. 
+- `geom_line()` trace une courbe reliant l'ensemble des points du graphique. 
+- `labs()` permet d'ajouter titre, sous-titre, noms des axes...
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+ggplot(Merimee_year, aes(chpdate, nb)) + geom_line(color = "orange") +
+  labs(x = "", y = "Nombre de bâtiments", 
+       title = "Répartition des bâtiments classés aux monuments historiques par année de construction") 
+
+```
+
+<br>
+
+##  Moyennes mobiles symétriques
+
+Afin de **lisser la courbe et de mieux visualiser les tendances, nous allons calculer des moyennes mobiles d'ordre** ***k***.
+
+L'estimation de la moyenne en un point par la moyenne des valeurs qui l'entourent nécessite des dates équidistantes. Nous allons donc ajouter les années manquantes au tableau et y associer la valeur 0 (absence de bâtiments classés construits à cette date). 
+
+Pour cela, nous créons un tableau *all_years* contenant la colonne *chp_date* et recensant l'ensemble des entiers (années) compris entre la valeur minimale (année la plus ancienne) et la valeur maximale (année la plus récente) du tableau *Merimee_year*. 
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+all_years <- data.frame(chpdate=c(min(Merimee_year$chpdate):max(Merimee_year$chpdate)))
+
+```
+
+
+Puis, nous réalisons une **Jointure** entre les tableaux *all_years* et *Merimee_year* en utilisant leur variable identique *chp_date* et la fonction `merge()`. 
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee_year <- merge(Merimee_year, all_years, by="chpdate", all = TRUE) 
+
+```
+
+
+Les années manquantes ont été ajoutées, mais elles affichent la valeur *NA* (*not available*) dans la variable *nb*. Remplaçons ces valeurs *NA* par *0*, puisqu'aucun batîment construit ces années-là n'a bénéficié de la certification.
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee_year$nb[is.na(Merimee_year$nb)] <- 0
+
+```
+
+Notons que ces nouvelles lignes ne comportent pas non plus de géométrie :
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+datatable(Merimee_year, options =  list(pageLength = 8))
+
+```
+
+<br>
+
+
+La librairie `pracma` et sa fonction `movavg()` permettent de calculer des moyennes mobiles à partir d'une série de valeurs. Les arguments de la fonction sont :
+
+- *x* = la série statistique
+- *n* = amplitude de la fenêtre temporelle (nombre de voisins)
+- *type* = moyenne mobile à calculer. La valeur "*s*" correspond à la forme la plus simple. Elle calcule la valeur moyenne des *n* valeurs précédant la valeur courante en tenant compte de cette dernière. 
+
+
+**Il s'agit donc d'un lissage linéaire** puisqu'un poids identique est donné à chacune des valeurs considérées.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+# Le résultat est stocké dans la variable ave_nb
+Merimee_year$ave_nb <- movavg(Merimee_year$nb, 
+                              n= 5, 
+                              type="s")
+  
+
+```
+
+
+**Dans un objectif comparatif, calculons des moyennes mobiles selon plusieurs valeurs de voisinage** ***k*** (5, 10, 20 et 40) et représentons les différentes courbes obtenues côte à côte.
+
+
+Pour cela nous utiliserons la boucle `for()` qui permet de reproduire, en boucle, une serie de traitements. 
+A chaque nouvelle boucle, nous modifions la valeur de *k* et réalisons une représentation graphique qui est enregistrée dans un objet. La fonction `assign()` personnalise le nom de cet objet *ggplot* à l'aide de la valeur de *k*.
+
+ 
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+for (k in c(5,10,20,40)) {
+
+  # Calcul des moyennes mobiles
+  Merimee_year$ave_nb <- movavg(Merimee_year$nb, n= k, type=c("s"))
+  
+  # Construction du graphique
+  Wind_plot <- ggplot(Merimee_year, aes(chpdate,ave_nb)) + 
+               geom_line(color="orange") +
+               labs(x = "", y="Nombre de bâtiments", subtitle = paste0("Fenêtre temporelle = ", k, " ans")) 
+  
+  # Spécification du nom avec la valeur de k
+  assign(paste0("window_", k), Wind_plot)
+}
+
+```
+
+Une fois que les quatre graphiques ont été construits et enregistrés dans des objets différents, il est aisé de les afficher tous ensemble dans la fenêtre graphique grâce aux fonctions proposées par la librairie `cowplot`.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+# Association des graphiques dans une grille
+multi_plots <- plot_grid(window_5,window_10,window_20,window_40)
+
+# Paramétrages titre/mise en page
+title_plot <- ggdraw() + 
+              draw_label("Répartition du nombre de bâtiments historiques par année de construction",
+                          fontface = 'bold', x = 0,
+                          hjust = 0) +
+             theme(plot.margin = margin(0, 0, 0, 7))
+
+
+# Affichage de l'ensemble
+plot_grid(title_plot, multi_plots,
+          ncol = 1,
+          rel_heights = c(0.1, 1))
+
+```
+
+<br>
+
+## Lissage exponentiel simple
+
+**Le lissage symétrique par moyennes mobiles donne un poids équivalent à l'ensemble des années contenues dans la fenêtre temporelle de dimension** ***k***. **Une alternative consiste à faire décroître le poids de ces dernières en fonction de leur distance temporelle à la date d'intérêt**. **Il s'agit d'un lissage exponentiel**. 
+
+Différents modèles de lissage exponentiel existent. La version la plus simple consiste à estimer une valeur à un temps *t* de la façon suivante :      
+
+<p align="center">
+$\hat{y_t}  = \alpha y_t + (1-\alpha)y_{t-1} + (1-\alpha)^2 y_{t-2} + (1-\alpha)^3 y_{t-3} + ... etc.$    
+<p/>
+
+**La décroissance des pondérations en remontant dans le temps est définie de façon exponentielle**. **Cette méthode est plus réactive aux courtes variations de tendance**.   
+
+L'utilisation d'un modèle exponentiel simple semble adapté à la distribution temporelle des années de construction des bâtiments toulousains classés aux monuments historiques puisque celle-ci ne présente pas de saisonnalité ou une tendance unique. 
+
+La fonction `ses()` (*simple exponential smoothing*) de la librairie `forecast` permet d'ajuster un modèle exponentiel simple à une serie statistique. **L'ajustement consiste à déterminer la valeur du coefficient de lissage $\alpha$**.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+# Création d'un objet time series
+Merimee_ts <- ts(Merimee_year$nb, start = min(Merimee_year$chpdate), end = max(Merimee_year$chpdate))
+
+Merimee_ts_fit <- ses(Merimee_ts)
+
+Merimee_ts_fit$model
+
+```
+
+La valeur du paramètre $\alpha$ est de 0.29, **ce qui signifie que 29\% des prédictions sont basées sur l'observation la plus récente**. Les données anciennes ont un poids relativement important sur les valeurs prédites à un temps *t* ($\alpha$ est plus proche de 0 que de 1), alors que les changements récents ont un impact moindre sur les valeurs prédites.
+
+En appliquant la fonction `summary()` sur les résultats de la fonction `ses()`, **on peut afficher les valeurs prédites** (*forecats*) **pour les 10 intervalles de temps** (ici année) **suivant la dernière date** de sa série statistique (soit de 2010 à 2019).
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+summary(Merimee_ts_fit)
+
+```
+
+`autoplot()` et `autolayer()` permettent d'afficher graphiquement la qualité de l'ajustement du modèle aux données observées. 
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+autoplot(Merimee_ts_fit) +
+  autolayer(Merimee_ts_fit$fitted, color="red", lwd=1)
+
+```
+
+
+La représentation graphique d'un modèle de lissage exponentiel présente par défaut les valeurs prédites par ce dernier. En mauve clair figure ainsi l'intervalle de confiance à 95\% et en mauve foncé l'intervalle de confiance à 80 \%.   
+
+
+
+**Les prédictions par lissage exponentiel simple n'opèrent que pour un futur proche**. Le graphique montre par ailleurs que ces valeurs sont estimées à un certain niveau (95% de chance qu'il n'y ait pas plus de 7 bâtiments construits après 2009 classés aux monuments historiques) mais de façon plate, puisque **ce type de lissage ne tient compte d'aucune tendance ni saisonnalité**. 
+
+<br>
+
+# Exploration spatiale
+
+## Carte d'inventaire interactive
+
+**La réalisation d'une carte d'inventaire interactive avec la librairie** `Leaflet` **permet de positionner chaque bâtiment dans l'espace toulousain et d'associer à chacun des points une fenêtre interactive**. 
+
+`Leaflet` propose d'afficher le fond de carte principal d'OpenStreetMap et sa projection par défaut (web Mercator, code epsg:4326). Il est donc parfois nécessaire de transformer le système de coordonnées de référence des données géographiques.
+
+Pour l'ajout de labels personnalisés, nous utiliserons l'identifiant du bâtiment classé (*chpuser*), le type de bâtiment (*chpdeno*), le siècle de construction (*chpscle*), le numéro et nom de rue (*chpadrs*) et le nom de commune (*chpcom*).
+
+Commençons par créer la variable qui contient le texte à afficher dans la fenêtre interactive.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee$label <- paste0("<b> Identifiant du bâtiment :</b> ", Merimee$chpuser, "<br>",
+                        "<b> Type de bâtiment :</b> ", Merimee$chpdeno, "<br>",
+                        "<b> Période de construction :</b> ", Merimee$chpscle, "<br>",
+                        "<b> Adresse :</b> ", Merimee$chpadrs, ", ", Merimee$chpcom, "<br>")
+
+
+```
+
+La fonction `leaflet()`, associée à un ensemble de fonctions complémentaires permet de générer la carte. Quelques exemples :   
+
+- `addTiles()` pour ajouter un fond de carte     
+- `addMarkers()` pour ajouter des marqueurs ponctuels de localisation     
+- `addScaleBar()` pour ajouter une échelle     
+- `addMiniMap()` pour ajouter une surface de localisation      
+
+Ces fonctions présentent de nombreux arguments paramétrables. On notera que l'utilisation de *pipe* (%>%), propre à la syntaxe `tidyverse`, est particulièrement utile ici pour clarifier la chaîne de traitement.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee_map <- leaflet() %>%
+               addTiles() %>%
+               addMarkers(
+                  lng = unlist(map(Merimee$geometry,1)),
+                  lat = unlist(map(Merimee$geometry,2)),
+                  data = Merimee,
+                  popup = Merimee$label,
+                  icon = list(iconUrl="https://upload.wikimedia.org/wikipedia/commons/1/10/Logo-monument-historique.png",
+                              iconSize = 25),
+                  clusterOptions = markerClusterOptions()) %>%
+               setView(lng = 1.433333, lat = 43.6, zoom = 13) %>%
+      addScaleBar(position = "bottomright", options = scaleBarOptions(metric = T, imperial = F)) %>%
+      addMiniMap()
+
+
+Merimee_map
+
+
+```
+
+<br>
+
+
+## Carte de densité carroyée
+
+Il peut être intéressant de visualiser l'intensité des bâtiments classés aux monuments historiques dans la métropole toulousaine sous la forme d'une cartographie thématique. Plusieurs solutions existent : cartes de densité de points, interpolation spatiale, modèles gravitaires de position, etc.
+
+Si l'on ne souhaite pas estimer des valeurs d'intensité de présence (ce qui nécessite de définir quels sont le voisinage, le type de distance, et la fonction d'impédence de cette dernière les plus opportuns à considérer dans le cas étudié), une solution simple consiste à subdiviser l'espace d'étude par une grille régulière (carroyage) et de comptabliser le nombre de monuments localisés dans chaque carreau.
+
+
+La librairie `raster` nous permet de construire la grille, puis de comptabiliser les monuments.   
+
+
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Construction de la grille régulière
+# à partir de l'étendue géographique  couverte par la localisation des bâtiments
+Merimee_grid <- raster(extent(Merimee),
+                       crs = st_crs(Merimee)$proj4string, nrow=50, ncol=50)
+
+# Calcul du nombre de points par carreau
+Merimee_count <- rasterize(Merimee, Merimee_grid, field = 1, fun = "sum")
+
+
+```
+
+Evidemment **la taille de la grille et son positionnement sur l'espace altèrent le décompte**. Comme pour toute analyse exploratoire de données spatiales (*ESDA* en anglais), il est alors recommandé de multiplier les points de vue (c'est-à-dire d'observer les changements induits par une modification de la grille).
+
+**Le résultat est un raster (matrice de pixel)**.
+
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+
+class(Merimee_count)
+
+```
+
+**Chaque pixel (carreau) est qualifié par le nombre de bâtiments classés qu'il contient**.
+Il s'agit d'une variable quantitative de stock, mais nous pouvons interpréter cette variable comme une densité (variable quantitative relative) car les valeurs sont calculées sur des surfaces identiques. 
+
+**Réalisons une carte choroplèthe pour représenter la densité (carroyée) des monuments historiques à Toulouse**.
+
+1) Import de la couche géographique des communes de la métropole toulousaine
+
+```{r, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
+
+Communes_metropole <- st_read("data/communes.shp")
+
+```
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+
+Communes_metropole <- st_read("data/communes.shp", quiet = TRUE)
+
+```
+
+2) Sélection des limites communales de la ville de Toulouse
+
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+
+# Sélection par le code INSEE
+Toulouse_boundary <- Communes_metropole[Communes_metropole$code_insee==31555,]
+
+```
+
+
+3) Utilisation de fonctions des librairies `rasterVis` et `ggplot2` pour la cartographie
+
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+
+gplot(Merimee_count) + 
+  geom_tile(aes(fill = value)) +
+  scale_fill_gradient(low = "light salmon", high = "dark red", na.value="white") +
+  coord_equal() +
+  labs(title = "Densité de bâtiments classés à Toulouse", 
+       subtitle = "Source : Fiches Mérimée du patrimoine architectural, 2019",
+       fill = "Nombre") +
+  theme_void() + 
+  layer_spatial(Toulouse_boundary, fill=NA) +
+  annotation_scale(location = "bl") +
+  annotation_north_arrow(location = "tl")
+
+```
+
+<br>
+
+## Carte animée
+
+La représentation cartographique de données spatio-temporelles pose de nombreux *challenges*, comme en témoigne la large bibliographie portant sur le sujet. L'un des outils offert au chercheur est l'animation cartographique, particulièrement populaire sur le web. Il s'agit de réaliser une carte par pas de temps, puis de les faire se succéder à l'écran chronologiquement. 
+
+Nous allons réaliser une animation par changement de localisation. Nous garderons la même symbologie tout au long de l'animation et regroupons les entités cartographiées par année de construction. 
+
+Pour réaliser une carte animée représentant les bâtiments classés par année de construction, nous utilisons la librairie `ggmap`.
+
+La fonction `get_map()` permet de récupérer des fonds de carte (Google Maps, OpenStreetMap, Stamen Maps...).
+`getbb()` nous permet alors de préciser l'emprise géographique (*bounding box*) souhaitée à partir d'un nom de lieu. 
+Nous précisons également un niveau de zoom.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+# Récupération d'un fond de carte
+toulouse_map <- get_map(getbb("Toulouse"), maptype = "terrain", zoom = 12)
+
+```
+
+
+La fonction `ggmap()` permet de réaliser des cartographies et s'utilise avec la syntaxe `ggplot2`. On commence par ajouter tous les bâtiments (points).
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+ggmap(toulouse_map) +
+  geom_point(data=Merimee,
+             aes(x=unlist(map(Merimee$geometry,1)),
+                 y=unlist(map(Merimee$geometry,2))), 
+             col="tomato",size=1, shape=20)
+
+```
+
+
+Puis on utilise la fonction `transition_time()` de la libraire `gganimate` (syntaxe `ggplot2`) pour réaliser une carte animée des bâtiments par année de construction. Nous indiquons *chpdate* comme variable temporelle à utiliser.
+
+La fonction `shadow_mark()` permet de contrôler l'affichage des entités antérieures et postérieures au pas de temps en cours et `ease_aes()` gère l'affichage des données durant les transitions (apparition/disparition).
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+ggmap(toulouse_map) +
+  geom_point(data=Merimee,
+             aes(x=unlist(map(Merimee$geometry,1)),
+                 y=unlist(map(Merimee$geometry,2))),
+             col="tomato",size=1, shape=20) +
+  transition_time(Merimee$chpdate) +
+  labs(title = "Year: {frame_time}") +
+  shadow_mark(alpha = 0.3, size = 0.5) +
+  ease_aes("linear")
+
+```
+
+
+<br>
+
+# Regroupements spatio-temporels
+
+
+## Prisme spatio-temporel
+
+L'observation des proximités spatiales et temporelles des bâtiments classés aux monuments historiques peut se faire via une représentation en 3 dimensions où les objets sont positionnés sur les axes *x* et *y* en fonction de leurs coordonnées spatiales et sur l'axe *z* selon leur année de construction.
+
+La librairie `plotly` permet de réaliser des visualisations interactives qui facilitent l'exploration.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+
+plot_ly(x = unlist(x = map(Merimee$geometry,1)), 
+               y = unlist(map(Merimee$geometry,2)), 
+               z = as.numeric(Merimee$chpdate),
+               color= as.numeric(Merimee$chpdate),
+               size=0.5) %>% add_markers() %>% 
+layout(scene = list(xaxis = list(title = 'longitude'),
+                    yaxis = list(title = 'latitude'),
+                    zaxis = list(title = 'Année de construction')))
+
+
+```
+
+
+<br>
+
+## ST-DBSCAN
+
+Les méthodes de groupement d'événements en fonction de leur proximité spatio-temporelle sont nombreuses [@Spatiotemp_cluster].
+
+@STDBSCAN **proposent d'étendre la méthode de l'algorithme de détection de** ***clusters*** **à partir de l'analyse des densités DBSCAN aux bases de données spatio-temporelles**. Ce nouvel algorithme, nommé ST-DBSCAN, reprend la logique du premier : balayer l'espace, compter pour chaque objet le nombre d'objets localisés dans une région d'un certain rayon de voisinage, et considérer que les objets contenus dans une région bénéficiant d'une densité supérieure à un certain seuil appartiennent à un même cluster, à ceci près qu'il introduit également un critère de proximité temporelle. 
+
+**Les deux auteurs ont développé une fonction R permettant d'appliquer l'algorithme ST-DBSCAN**, dont le [code est mis à disposition sur Github](https://github.com/Kersauson/ST-DBSCAN/blob/master/stdbscan.R){target="_blank"}. Copier-coller **l'intégralité du code de leur fonction** `stdbscan()` :
+
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+########################################################################
+# ST-DBSCAN : An algorithm for clustering spatial-temporal data        #
+# (Birant and Kut, 2006)                                 #
+# Application on a trajectory                           #
+# https://github.com/Kersauson/ST-DBSCAN/blob/master/stdbscan.R #
+########################################################################
+
+
+########################################################################
+# INPUTS :                                                             #
+# traj = traj gps (x, y and time)                                      #
+# eps = distance minimum for longitude and latitude                    #
+# eps2 =  distance minimum for date                                    #
+# minpts = number of points to consider a cluster                      #
+########################################################################
+
+stdbscan = function(traj,
+                    x,
+                    y,
+                    time,
+                    eps,
+                    eps2,
+                    minpts,
+                    cldensity = TRUE) {
+
+  countmode = 1:length(x)
+  seeds = TRUE
+
+  data_spatial<- as.matrix(dist(cbind(y, x)))
+  data_temporal<- as.matrix(dist(time))
+  n <- nrow(data_spatial)
+
+  classn <- cv <- integer(n)
+  isseed <- logical(n)
+  cn <- integer(1)
+
+  for (i in 1:n) {
+    if (i %in% countmode)
+      #cat("Processing point ", i, " of ", n, ".\n")
+      unclass <- (1:n)[cv < 1]
+
+    if (cv[i] == 0) {
+      reachables <- intersect(unclass[data_spatial[i, unclass] <= eps],  unclass[data_temporal[i, unclass] <= eps2])
+      if (length(reachables) + classn[i] < minpts)
+        cv[i] <- (-1)
+      else {
+        cn <- cn + 1
+        cv[i] <- cn
+        isseed[i] <- TRUE
+        reachables <- setdiff(reachables, i)
+        unclass <- setdiff(unclass, i)
+        classn[reachables] <- classn[reachables] + 1
+        while (length(reachables)) {
+          cv[reachables] <- cn
+          ap <- reachables
+          reachables <- integer()
+
+          for (i2 in seq(along = ap)) {
+            j <- ap[i2]
+
+            jreachables <- intersect(unclass[data_spatial[j, unclass] <= eps], unclass[data_temporal[j, unclass] <= eps2])
+
+            if (length(jreachables) + classn[j] >= minpts) {
+              isseed[j] <- TRUE
+              cv[jreachables[cv[jreachables] < 0]] <- cn
+              reachables <- union(reachables, jreachables[cv[jreachables] == 0])
+            }
+            classn[jreachables] <- classn[jreachables] + 1
+            unclass <- setdiff(unclass, j)
+          }
+        }
+      }
+    }
+    if (!length(unclass))
+      break
+
+  }
+
+
+  if (any(cv == (-1))) {
+    cv[cv == (-1)] <- 0
+  }
+  out <- list(cluster = cv, eps = eps, minpts = minpts, density = classn)
+  rm(classn)
+  if (seeds && cn > 0) {
+    out$isseed <- isseed
+  }
+  class(out) <- "stdbscan"
+  return(out)
+}
+```
+
+**Executer le code**. Vous pouvez désormais utiliser cette fonction de partitionnement comme n'importe quelle autre fonction.
+
+
+Nous indiquons ici les **coordonnées en longitude et latitude** des bâtiments classés, leur **date de construction**, les **seuils de distance spatiale euclidienne et de distance temporelle**, et la **valeur à partir de laquelle considérer un ensemble de points comme un** ***cluster***.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+Merimee$lon <- unlist(map(Merimee$geometry,1))
+Merimee$lat <- unlist(map(Merimee$geometry,2))
+
+spatiotemp_clust <- stdbscan(x = Merimee$lon, 
+                             y = Merimee$lat, 
+                             time = Merimee$chpdate,
+                             eps = 1, 
+                             eps2 = 1, 
+                             minpts = 10)
+
+
+spatiotemp_clust
+
+
+
+```
+
+
+
+Pour récupérer la classification stockée dans la variable *cluster*, il suffit d'**assigner les valeurs dans une nouvelle variable de notre base de données Mérimée**.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+Merimee$cluster <- spatiotemp_clust$cluster
+
+```
+
+
+**Représentons de nouveau les données en trois dimensions et la classification calculée** à l'aide de la librairie `plotly`.
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+
+
+# Création d'une palette de couleurs 
+getPalette <- colorRampPalette(brewer.pal(7, "Set1"))
+
+
+plot_ly(x = unlist(x = map(Merimee$geometry,1)), 
+               y = unlist(map(Merimee$geometry,2)), 
+               z = as.numeric(Merimee$chpdate),
+               color= as.factor(Merimee$cluster),
+                colors = getPalette(length(unique(Merimee$cluster))),
+               size=0.6) %>% add_markers() %>% 
+layout(scene = list(xaxis = list(title = 'Longitude'),
+                    yaxis = list(title = 'Latitude'),
+                    zaxis = list(title = 'Année de construction')))
+
+
+
+```
+
+<br>
+
+
+
+# Bibliographie {-}
+
+<div id="refs"></div>
+
+<br>
+
+
+# Annexes {-}
+
+
+
+## Info session  {-}
+
+```{r session_info, echo=FALSE}
+kableExtra::kable_styling(knitr::kable(rzine::sessionRzine()[[1]], row.names = F))
+kableExtra::kable_styling(knitr::kable(rzine::sessionRzine()[[2]], row.names = F))
+```
+
+
+## Citation {-}
+
+```{r generateBibliography, echo=FALSE}
+
+cat(readLines('cite.bib'), sep = '\n')
+
+``` 
+
+<br>
+
+## Glossaire {- #endnotes}
+
+```{js, echo=FALSE}
+
+$(document).ready(function() {
+  $('.footnotes ol').appendTo('#endnotes');
+  $('.footnotes').remove();
+});
+
+```
