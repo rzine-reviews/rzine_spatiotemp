@@ -14,14 +14,14 @@ csl: Rzine_citation.csl
 bibliography: biblio.bib
 nocite: |
   @*
-link-citations: true
-# github: "rzine-reviews/MTA"
-# gitlab: "gitlab.huma-num.fr/rzine/help_rzine_publication"
+link-citations: false
+github: "rzine-reviews/rzine_spatiotemp"
+# gitlab: "gitlab.huma-num.fr/author/repository"
 # doi: "10.5281/zenodo.4554776"
-# licence: "by-nc-sa"
-
-# Only Creative Commons Licence 
+licence: "by-sa"
 # 5 possible choices : "by-nd", "by", "by-nc-sa", "by-nc","by-sa"
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -117,7 +117,7 @@ lapply(my_packages, library,  character.only = TRUE)
 ```
 
 
-```{r, echo=FALSE, eval=TRUE}
+```{r, echo=FALSE, eval=TRUE, cache=TRUE}
 
 invisible(lapply(my_packages, library,  character.only = TRUE))
 
@@ -131,7 +131,7 @@ invisible(lapply(my_packages, library,  character.only = TRUE))
 
 <br>
 
-<p class="center"> [<img src="figures/zip.png" width="50"/> **Télécharger les données**](data.zip) </p>  
+<p class="center"> [<img src="figures/zip.png" width="50"/> **Télécharger les données**](https://github.com/rzine-reviews/rzine_spatiotemp/raw/main/data.zip) </p>  
 
 <br>
 
@@ -140,7 +140,7 @@ invisible(lapply(my_packages, library,  character.only = TRUE))
 **1)** ***communes.shp*** :  Limites des communes de la métropole toulousaine récupérées sur [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/communes/)
 
 
-```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 com <- st_read("data/communes.shp", quiet=TRUE)
 par(mar=c(0,0,0,0))
@@ -154,7 +154,7 @@ plot(st_geometry(com ))
 
 **2)** ***base-merimee.shp*** : Extraction de la [**BD Mérimée**](https://www.culture.gouv.fr/Espace-documentation/Base-de-donnees-Culture/Merimee-une-base-de-donnees-du-patrimoine-monumental-francais-de-la-Prehistoire-a-nos-jours){target="_blank"} mise à disposition sur [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/base-merimee/){target="_blank"}. Il s'agit d'une **couche géographique d'objets ponctuels**. **Chaque point est un monument du patrimoine architectural toulousain précisément géolocalisé dans l'espace.** 
 
-```{r, echo=FALSE, eval=TRUE, results="hide", message=FALSE, warning=FALSE}
+```{r, echo=FALSE, eval=TRUE, results="hide", message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee <- st_read("data/base-merimee.shp")
 par(mar=c(0,0,0,0))
@@ -166,7 +166,7 @@ plot(st_geometry(Merimee), pch=20, cex=0.7, col="#cb2b2b70")
 
 **Chaque monument est caractérisé par une cinquantaine de variables**. Extrait :
 
-```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # install.packages("DT")
 library(DT)
@@ -187,7 +187,7 @@ Ces données sont alors converties en objet *sf* (*simple feature dataframe*). I
 
 **Utilisez** `st_read()` **pour importer les données**.
 
-```{r, echo=TRUE, eval=TRUE, results="hide", message=FALSE, warning=FALSE}
+```{r, echo=TRUE, eval=TRUE, results="hide", message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee <- st_read("data/base-merimee.shp")
 
@@ -199,7 +199,7 @@ Merimee <- st_read("data/base-merimee.shp")
 
 La fonction `summary()` permet d'obtenir un résumé de l'ensemble du tableau de données ou de certaines variables d'intérêt. Ici, elle permet de décrire la variable *geometry* qui contient la forme et la localisation de chaque élément du tableau.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 summary(Merimee$geometry)
 
@@ -211,7 +211,7 @@ summary(Merimee$geometry)
 
 La fonction `colnames()` renvoie le nom de l'ensemble des colonnes du tableau de données. 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 colnames(Merimee)
 
@@ -222,7 +222,7 @@ La variable nommée *chpdate* **contient les informations sur la date de constru
 
 Appliquons les fonctions `class()`, `head()` et `summary()` à cette variable pour en apprendre un peu plus.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 class(Merimee$chpdate)
 head(Merimee$chpdate)
@@ -253,7 +253,7 @@ Dans l'exemple ci-dessous, nous modifions la variable *chpdate* en deux temps :
 
 2) Transformation de cette chaîne de 4 caractères en nombre grâce à la fonction `as.integer()`
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee$chpdate <- substr(Merimee$chpdate, 1, 4) %>%
   as.integer(Merimee$chpdate) 
@@ -264,7 +264,7 @@ Merimee$chpdate <- substr(Merimee$chpdate, 1, 4) %>%
 Puis, **nous supprimons les lignes pour lesquelles l'année de construction est inconnue (NA)**, grâce aux fonctions `filter()` et `is.na()`. Notez que l'usage du `!` signifie ici "est différent de".
 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee <- filter(Merimee, !is.na(Merimee$chpdate))
 
@@ -288,7 +288,7 @@ Pour observer la distribution temporelle du patrimoine classé aux monuments his
 **On regroupe les lignes par année, tout en comptabilisant le nombre de lignes regroupées**.
 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee_year <- Merimee %>%
   group_by(chpdate) %>%
@@ -306,7 +306,7 @@ Les fonctions de la librairie `ggplot2` vont nous permettre d'en faire une repr�
 - `geom_line()` trace une courbe reliant l'ensemble des points du graphique. 
 - `labs()` permet d'ajouter titre, sous-titre, noms des axes...
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 ggplot(Merimee_year, aes(chpdate, nb)) + geom_line(color = "orange") +
   labs(x = "", y = "Nombre de bâtiments", 
@@ -324,7 +324,7 @@ L'estimation de la moyenne en un point par la moyenne des valeurs qui l'entouren
 
 Pour cela, nous créons un tableau *all_years* contenant la colonne *chp_date* et recensant l'ensemble des entiers (années) compris entre la valeur minimale (année la plus ancienne) et la valeur maximale (année la plus récente) du tableau *Merimee_year*. 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 all_years <- data.frame(chpdate=c(min(Merimee_year$chpdate):max(Merimee_year$chpdate)))
 
@@ -334,7 +334,7 @@ all_years <- data.frame(chpdate=c(min(Merimee_year$chpdate):max(Merimee_year$chp
 Puis, nous réalisons une **Jointure** entre les tableaux *all_years* et *Merimee_year* en utilisant leur variable identique *chp_date* et la fonction `merge()`. 
 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee_year <- merge(Merimee_year, all_years, by="chpdate", all = TRUE) 
 
@@ -344,7 +344,7 @@ Merimee_year <- merge(Merimee_year, all_years, by="chpdate", all = TRUE)
 Les années manquantes ont été ajoutées, mais elles affichent la valeur *NA* (*not available*) dans la variable *nb*. Remplaçons ces valeurs *NA* par *0*, puisqu'aucun batîment construit ces années-là n'a bénéficié de la certification.
 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee_year$nb[is.na(Merimee_year$nb)] <- 0
 
@@ -352,7 +352,7 @@ Merimee_year$nb[is.na(Merimee_year$nb)] <- 0
 
 Notons que ces nouvelles lignes ne comportent pas non plus de géométrie :
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 
 datatable(Merimee_year, options =  list(pageLength = 8))
 
@@ -370,7 +370,7 @@ La librairie `pracma` et sa fonction `movavg()` permettent de calculer des moyen
 
 **Il s'agit donc d'un lissage linéaire** puisqu'un poids identique est donné à chacune des valeurs considérées.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Le résultat est stocké dans la variable ave_nb
 Merimee_year$ave_nb <- movavg(Merimee_year$nb, 
@@ -388,7 +388,7 @@ Pour cela nous utiliserons la boucle `for()` qui permet de reproduire, en boucle
 A chaque nouvelle boucle, nous modifions la valeur de *k* et réalisons une représentation graphique qui est enregistrée dans un objet. La fonction `assign()` personnalise le nom de cet objet *ggplot* à l'aide de la valeur de *k*.
 
  
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 for (k in c(5,10,20,40)) {
 
@@ -408,7 +408,7 @@ for (k in c(5,10,20,40)) {
 
 Une fois que les quatre graphiques ont été construits et enregistrés dans des objets différents, il est aisé de les afficher tous ensemble dans la fenêtre graphique grâce aux fonctions proposées par la librairie `cowplot`.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Association des graphiques dans une grille
 multi_plots <- plot_grid(window_5,window_10,window_20,window_40)
@@ -446,7 +446,7 @@ L'utilisation d'un modèle exponentiel simple semble adapté à la distribution 
 
 La fonction `ses()` (*simple exponential smoothing*) de la librairie `forecast` permet d'ajuster un modèle exponentiel simple à une serie statistique. **L'ajustement consiste à déterminer la valeur du coefficient de lissage $\alpha$**.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Création d'un objet time series
 Merimee_ts <- ts(Merimee_year$nb, start = min(Merimee_year$chpdate), end = max(Merimee_year$chpdate))
@@ -461,7 +461,7 @@ La valeur du paramètre $\alpha$ est de 0.29, **ce qui signifie que 29\% des pr�
 
 En appliquant la fonction `summary()` sur les résultats de la fonction `ses()`, **on peut afficher les valeurs prédites** (*forecats*) **pour les 10 intervalles de temps** (ici année) **suivant la dernière date** de sa série statistique (soit de 2010 à 2019).
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 summary(Merimee_ts_fit)
 
@@ -469,7 +469,7 @@ summary(Merimee_ts_fit)
 
 `autoplot()` et `autolayer()` permettent d'afficher graphiquement la qualité de l'ajustement du modèle aux données observées. 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 autoplot(Merimee_ts_fit) +
   autolayer(Merimee_ts_fit$fitted, color="red", lwd=1)
@@ -497,7 +497,7 @@ Pour l'ajout de labels personnalisés, nous utiliserons l'identifiant du bâtime
 
 Commençons par créer la variable qui contient le texte à afficher dans la fenêtre interactive.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee$label <- paste0("<b> Identifiant du bâtiment :</b> ", Merimee$chpuser, "<br>",
                         "<b> Type de bâtiment :</b> ", Merimee$chpdeno, "<br>",
@@ -516,7 +516,7 @@ La fonction `leaflet()`, associée à un ensemble de fonctions complémentaires 
 
 Ces fonctions présentent de nombreux arguments paramétrables. On notera que l'utilisation de *pipe* (%>%), propre à la syntaxe `tidyverse`, est particulièrement utile ici pour clarifier la chaîne de traitement.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee_map <- leaflet() %>%
                addTiles() %>%
@@ -551,7 +551,7 @@ Si l'on ne souhaite pas estimer des valeurs d'intensité de présence (ce qui n�
 La librairie `raster` nous permet de construire la grille, puis de comptabiliser les monuments.   
 
 
-```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Construction de la grille régulière
 # à partir de l'étendue géographique  couverte par la localisation des bâtiments
@@ -568,7 +568,7 @@ Evidemment **la taille de la grille et son positionnement sur l'espace altèrent
 
 **Le résultat est un raster (matrice de pixel)**.
 
-```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 class(Merimee_count)
 
@@ -581,13 +581,13 @@ Il s'agit d'une variable quantitative de stock, mais nous pouvons interpréter c
 
 1) Import de la couche géographique des communes de la métropole toulousaine
 
-```{r, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, eval=FALSE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Communes_metropole <- st_read("data/communes.shp")
 
 ```
 
-```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Communes_metropole <- st_read("data/communes.shp", quiet = TRUE)
 
@@ -595,7 +595,7 @@ Communes_metropole <- st_read("data/communes.shp", quiet = TRUE)
 
 2) Sélection des limites communales de la ville de Toulouse
 
-```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Sélection par le code INSEE
 Toulouse_boundary <- Communes_metropole[Communes_metropole$code_insee==31555,]
@@ -605,7 +605,7 @@ Toulouse_boundary <- Communes_metropole[Communes_metropole$code_insee==31555,]
 
 3) Utilisation de fonctions des librairies `rasterVis` et `ggplot2` pour la cartographie
 
-```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 gplot(Merimee_count) + 
   geom_tile(aes(fill = value)) +
@@ -635,7 +635,7 @@ La fonction `get_map()` permet de récupérer des fonds de carte (Google Maps, O
 `getbb()` nous permet alors de préciser l'emprise géographique (*bounding box*) souhaitée à partir d'un nom de lieu. 
 Nous précisons également un niveau de zoom.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Récupération d'un fond de carte
 toulouse_map <- get_map(getbb("Toulouse"), maptype = "terrain", zoom = 12)
@@ -646,7 +646,7 @@ toulouse_map <- get_map(getbb("Toulouse"), maptype = "terrain", zoom = 12)
 La fonction `ggmap()` permet de réaliser des cartographies et s'utilise avec la syntaxe `ggplot2`. On commence par ajouter tous les bâtiments (points).
 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 ggmap(toulouse_map) +
   geom_point(data=Merimee,
@@ -661,7 +661,7 @@ Puis on utilise la fonction `transition_time()` de la libraire `gganimate` (synt
 
 La fonction `shadow_mark()` permet de contrôler l'affichage des entités antérieures et postérieures au pas de temps en cours et `ease_aes()` gère l'affichage des données durant les transitions (apparition/disparition).
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 ggmap(toulouse_map) +
   geom_point(data=Merimee,
@@ -687,7 +687,7 @@ L'observation des proximités spatiales et temporelles des bâtiments classés a
 
 La librairie `plotly` permet de réaliser des visualisations interactives qui facilitent l'exploration.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r plotly1, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 
 plot_ly(x = unlist(x = map(Merimee$geometry,1)), 
@@ -714,7 +714,7 @@ Les méthodes de groupement d'événements en fonction de leur proximité spatio
 **Les deux auteurs ont développé une fonction R permettant d'appliquer l'algorithme ST-DBSCAN**, dont le [code est mis à disposition sur Github](https://github.com/Kersauson/ST-DBSCAN/blob/master/stdbscan.R){target="_blank"}. Copier-coller **l'intégralité du code de leur fonction** `stdbscan()` :
 
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 ########################################################################
 # ST-DBSCAN : An algorithm for clustering spatial-temporal data        #
@@ -813,7 +813,8 @@ stdbscan = function(traj,
 
 Nous indiquons ici les **coordonnées en longitude et latitude** des bâtiments classés, leur **date de construction**, les **seuils de distance spatiale euclidienne et de distance temporelle**, et la **valeur à partir de laquelle considérer un ensemble de points comme un** ***cluster***.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
+
 Merimee$lon <- unlist(map(Merimee$geometry,1))
 Merimee$lat <- unlist(map(Merimee$geometry,2))
 
@@ -827,15 +828,13 @@ spatiotemp_clust <- stdbscan(x = Merimee$lon,
 
 spatiotemp_clust
 
-
-
 ```
 
 
 
 Pour récupérer la classification stockée dans la variable *cluster*, il suffit d'**assigner les valeurs dans une nouvelle variable de notre base de données Mérimée**.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
+```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee$cluster <- spatiotemp_clust$cluster
 
@@ -844,12 +843,10 @@ Merimee$cluster <- spatiotemp_clust$cluster
 
 **Représentons de nouveau les données en trois dimensions et la classification calculée** à l'aide de la librairie `plotly`.
 
-```{r, echo=TRUE, message=FALSE, warning=FALSE}
-
+```{r  plotly2, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Création d'une palette de couleurs 
 getPalette <- colorRampPalette(brewer.pal(7, "Set1"))
-
 
 plot_ly(x = unlist(x = map(Merimee$geometry,1)), 
                y = unlist(map(Merimee$geometry,2)), 
@@ -861,8 +858,6 @@ layout(scene = list(xaxis = list(title = 'Longitude'),
                     yaxis = list(title = 'Latitude'),
                     zaxis = list(title = 'Année de construction')))
 
-
-
 ```
 
 <br>
@@ -873,7 +868,7 @@ layout(scene = list(xaxis = list(title = 'Longitude'),
 
 <div id="refs"></div>
 
-<br>
+<br/>
 
 
 # Annexes {-}
@@ -890,21 +885,18 @@ kableExtra::kable_styling(knitr::kable(rzine::sessionRzine()[[2]], row.names = F
 
 ## Citation {-}
 
-```{r generateBibliography, echo=FALSE}
-
-cat(readLines('cite.bib'), sep = '\n')
-
+```{r ReadCitation, echo=FALSE}
+citationRzine <- bibtex::read.bib("cite.bib")
 ``` 
 
-<br>
+`r capture.output(print(citationRzine[1]))`
 
-## Glossaire {- #endnotes}
+### Format BibTex : {-}
 
-```{js, echo=FALSE}
+```{r generateBibTex, echo=FALSE}
+cat(readLines('cite.bib'), sep = '\n')
+``` 
 
-$(document).ready(function() {
-  $('.footnotes ol').appendTo('#endnotes');
-  $('.footnotes').remove();
-});
+<br/>
 
-```
+
