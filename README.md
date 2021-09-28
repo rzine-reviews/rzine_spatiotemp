@@ -1,6 +1,6 @@
 # Exploration spatio-temporelle d’objets géographiques ponctuels [<img src="https://rzine.fr/img/Rzine_logo.png"  align="right" width="120"/>](http://rzine.fr/)
 ### L’exemple du patrimoine architectural toulousain
-**Le Texier Marion (Université Rouen Normandie, UMR 6266 IDEES)**
+**Marion Le Texier (Université Rouen Normandie, UMR 6266 IDEES)**
 <br/>  
 Pour consulter cette fiche Rzine vous pouvez cliquer [**ici**](https://rzine-reviews.github.io/rzine_spatiotemp/)
 
