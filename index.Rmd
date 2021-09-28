@@ -20,8 +20,6 @@ github: "rzine-reviews/rzine_spatiotemp"
 # doi: "10.5281/zenodo.4554776"
 licence: "by-sa"
 # 5 possible choices : "by-nd", "by", "by-nc-sa", "by-nc","by-sa"
-editor_options: 
-  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -886,15 +884,26 @@ kableExtra::kable_styling(knitr::kable(rzine::sessionRzine()[[2]], row.names = F
 ## Citation {-}
 
 ```{r ReadCitation, echo=FALSE}
-citationRzine <- bibtex::read.bib("cite.bib")
+
+rref <- bibentry(
+   bibtype = "misc",
+   title = "Exploration spatio-temporelle d’objets géographiques ponctuels",
+   author = person("Marion Le Texier"),
+   journal = "Rzine",
+   publisher = "FR CIST",
+   year = 2021,
+   url = "https://rzine.fr/docs/20200601_mletexier86_explo_spatiotemporel/index.html")
+
 ``` 
 
-`r capture.output(print(citationRzine[1]))`
+`r capture.output(print(rref))`
 
-### Format BibTex : {-}
+### BibTex : {-}
 
 ```{r generateBibTex, echo=FALSE}
-cat(readLines('cite.bib'), sep = '\n')
+
+print(rref, style = "Bibtex")
+
 ``` 
 
 <br/>
