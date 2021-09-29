@@ -14,7 +14,7 @@ csl: Rzine_citation.csl
 bibliography: biblio.bib
 nocite: |
   @*
-link-citations: false
+link-citations: true
 github: "rzine-reviews/rzine_spatiotemp"
 # gitlab: "gitlab.huma-num.fr/author/repository"
 # doi: "10.5281/zenodo.4554776"
