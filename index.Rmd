@@ -3,7 +3,7 @@ title: "Exploration spatio-temporelle d’objets géographiques ponctuels"
 subtitle: "L'exemple du patrimoine architectural toulousain"
 date: "`r Sys.Date()`"
 author: 
- - name: Le Texier Marion
+ - name: Marion Le Texier 
    affiliation: Université Rouen Normandie, UMR 6266 IDEES
 logo: "figures/rzine.png"  
 output:
