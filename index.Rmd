@@ -102,7 +102,7 @@ Utilisons `install.packages()` pour installer les packages depuis le CRAN (*Comp
 
 ```{r, echo=TRUE, eval=TRUE}
 
-if(length(missing_packages)) install.packages(missing_packages)
+if(length(missing_packages)) {install.packages(missing_packages)}
 
 ```
 
@@ -141,8 +141,8 @@ invisible(lapply(my_packages, library,  character.only = TRUE))
 ```{r, echo=FALSE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 com <- st_read("data/communes.shp", quiet=TRUE)
-par(mar=c(0,0,0,0))
-plot(st_geometry(com ))
+par(mar = c(0,0,0,0))
+plot(st_geometry(com))
 
 
 ```
@@ -155,8 +155,8 @@ plot(st_geometry(com ))
 ```{r, echo=FALSE, eval=TRUE, results="hide", message=FALSE, warning=FALSE, cache=TRUE}
 
 Merimee <- st_read("data/base-merimee.shp")
-par(mar=c(0,0,0,0))
-plot(st_geometry(Merimee), pch=20, cex=0.7, col="#cb2b2b70")
+par(mar = c(0,0,0,0))
+plot(st_geometry(Merimee), pch = 20, cex = 0.7, col = "#cb2b2b70")
 
 
 ```
@@ -253,8 +253,7 @@ Dans l'exemple ci-dessous, nous modifions la variable *chpdate* en deux temps :
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
-Merimee$chpdate <- substr(Merimee$chpdate, 1, 4) %>%
-  as.integer(Merimee$chpdate) 
+Merimee$chpdate <- substr(Merimee$chpdate, 1, 4) %>% as.integer(Merimee$chpdate) 
 
 ```
 
@@ -306,7 +305,8 @@ Les fonctions de la librairie `ggplot2` vont nous permettre d'en faire une repr�
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
-ggplot(Merimee_year, aes(chpdate, nb)) + geom_line(color = "orange") +
+ggplot(Merimee_year, aes(chpdate, nb)) + 
+  geom_line(color = "orange") +
   labs(x = "", y = "Nombre de bâtiments", 
        title = "Répartition des bâtiments classés aux monuments historiques par année de construction") 
 
@@ -324,7 +324,7 @@ Pour cela, nous créons un tableau *all_years* contenant la colonne *chp_date* e
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
-all_years <- data.frame(chpdate=c(min(Merimee_year$chpdate):max(Merimee_year$chpdate)))
+all_years <- data.frame(chpdate = c(min(Merimee_year$chpdate):max(Merimee_year$chpdate)))
 
 ```
 
@@ -334,7 +334,7 @@ Puis, nous réalisons une **Jointure** entre les tableaux *all_years* et *Merime
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
-Merimee_year <- merge(Merimee_year, all_years, by="chpdate", all = TRUE) 
+Merimee_year <- merge(Merimee_year, all_years, by = "chpdate", all = TRUE) 
 
 ```
 
@@ -372,8 +372,8 @@ La librairie `pracma` et sa fonction `movavg()` permettent de calculer des moyen
 
 # Le résultat est stocké dans la variable ave_nb
 Merimee_year$ave_nb <- movavg(Merimee_year$nb, 
-                              n= 5, 
-                              type="s")
+                              n = 5, 
+                              type = "s")
   
 
 ```
@@ -391,12 +391,13 @@ A chaque nouvelle boucle, nous modifions la valeur de *k* et réalisons une repr
 for (k in c(5,10,20,40)) {
 
   # Calcul des moyennes mobiles
-  Merimee_year$ave_nb <- movavg(Merimee_year$nb, n= k, type=c("s"))
+  Merimee_year$ave_nb <- movavg(Merimee_year$nb, n = k, type = c("s"))
   
   # Construction du graphique
   Wind_plot <- ggplot(Merimee_year, aes(chpdate,ave_nb)) + 
-               geom_line(color="orange") +
-               labs(x = "", y="Nombre de bâtiments", subtitle = paste0("Fenêtre temporelle = ", k, " ans")) 
+               geom_line(color = "orange") +
+               labs(x = "", y = "Nombre de bâtiments", 
+                    subtitle = paste0("Fenêtre temporelle = ", k, " ans")) 
   
   # Spécification du nom avec la valeur de k
   assign(paste0("window_", k), Wind_plot)
@@ -409,7 +410,7 @@ Une fois que les quatre graphiques ont été construits et enregistrés dans des
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Association des graphiques dans une grille
-multi_plots <- plot_grid(window_5,window_10,window_20,window_40)
+multi_plots <- plot_grid(window_5, window_10, window_20, window_40)
 
 # Paramétrages titre/mise en page
 title_plot <- ggdraw() + 
@@ -447,7 +448,9 @@ La fonction `ses()` (*simple exponential smoothing*) de la librairie `forecast` 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Création d'un objet time series
-Merimee_ts <- ts(Merimee_year$nb, start = min(Merimee_year$chpdate), end = max(Merimee_year$chpdate))
+Merimee_ts <- ts(Merimee_year$nb, 
+                 start = min(Merimee_year$chpdate), 
+                 end = max(Merimee_year$chpdate))
 
 Merimee_ts_fit <- ses(Merimee_ts)
 
@@ -470,7 +473,7 @@ summary(Merimee_ts_fit)
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 autoplot(Merimee_ts_fit) +
-  autolayer(Merimee_ts_fit$fitted, color="red", lwd=1)
+  autolayer(Merimee_ts_fit$fitted, color = "red", lwd = 1)
 
 ```
 
@@ -523,11 +526,12 @@ Merimee_map <- leaflet() %>%
                   lat = unlist(map(Merimee$geometry,2)),
                   data = Merimee,
                   popup = Merimee$label,
-                  icon = list(iconUrl="https://upload.wikimedia.org/wikipedia/commons/1/10/Logo-monument-historique.png",
+                  icon = list(iconUrl = "https://upload.wikimedia.org/wikipedia/commons/1/10/Logo-monument-historique.png",
                               iconSize = 25),
                   clusterOptions = markerClusterOptions()) %>%
                setView(lng = 1.433333, lat = 43.6, zoom = 13) %>%
-      addScaleBar(position = "bottomright", options = scaleBarOptions(metric = T, imperial = F)) %>%
+      addScaleBar(position = "bottomright", 
+                  options = scaleBarOptions(metric = TRUE, imperial = FALSE)) %>%
       addMiniMap()
 
 
@@ -552,9 +556,9 @@ La librairie `raster` nous permet de construire la grille, puis de comptabiliser
 ```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Construction de la grille régulière
-# à partir de l'étendue géographique  couverte par la localisation des bâtiments
+# à partir de l'étendue géographique couverte par la localisation des bâtiments
 Merimee_grid <- raster(extent(Merimee),
-                       crs = st_crs(Merimee)$proj4string, nrow=50, ncol=50)
+                       crs = st_crs(Merimee)$proj4string, nrow = 50, ncol = 50)
 
 # Calcul du nombre de points par carreau
 Merimee_count <- rasterize(Merimee, Merimee_grid, field = 1, fun = "sum")
@@ -596,7 +600,7 @@ Communes_metropole <- st_read("data/communes.shp", quiet = TRUE)
 ```{r, echo=TRUE, eval=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 # Sélection par le code INSEE
-Toulouse_boundary <- Communes_metropole[Communes_metropole$code_insee==31555,]
+Toulouse_boundary <- Communes_metropole[Communes_metropole$code_insee == 31555, ]
 
 ```
 
@@ -607,13 +611,15 @@ Toulouse_boundary <- Communes_metropole[Communes_metropole$code_insee==31555,]
 
 gplot(Merimee_count) + 
   geom_tile(aes(fill = value)) +
-  scale_fill_gradient(low = "light salmon", high = "dark red", na.value="white") +
+  scale_fill_gradient(low = "light salmon", 
+                      high = "dark red", 
+                      na.value = "white") +
   coord_equal() +
   labs(title = "Densité de bâtiments classés à Toulouse", 
        subtitle = "Source : Fiches Mérimée du patrimoine architectural, 2019",
        fill = "Nombre") +
   theme_void() + 
-  layer_spatial(Toulouse_boundary, fill=NA) +
+  layer_spatial(Toulouse_boundary, fill = NA) +
   annotation_scale(location = "bl") +
   annotation_north_arrow(location = "tl")
 
@@ -648,9 +654,9 @@ La fonction `ggmap()` permet de réaliser des cartographies et s'utilise avec la
 
 ggmap(toulouse_map) +
   geom_point(data=Merimee,
-             aes(x=unlist(map(Merimee$geometry,1)),
-                 y=unlist(map(Merimee$geometry,2))), 
-             col="tomato",size=1, shape=20)
+             aes(x = unlist(map(Merimee$geometry, 1)),
+                 y = unlist(map(Merimee$geometry, 2))), 
+             col = "tomato",size = 1, shape = 20)
 
 ```
 
@@ -663,9 +669,9 @@ La fonction `shadow_mark()` permet de contrôler l'affichage des entités antér
 
 ggmap(toulouse_map) +
   geom_point(data=Merimee,
-             aes(x=unlist(map(Merimee$geometry,1)),
-                 y=unlist(map(Merimee$geometry,2))),
-             col="tomato",size=1, shape=20) +
+             aes(x = unlist(map(Merimee$geometry, 1)),
+                 y = unlist(map(Merimee$geometry, 2))),
+             col = "tomato",size = 1, shape = 20) +
   transition_time(Merimee$chpdate) +
   labs(title = "Year: {frame_time}") +
   shadow_mark(alpha = 0.3, size = 0.5) +
@@ -688,12 +694,13 @@ La librairie `plotly` permet de réaliser des visualisations interactives qui fa
 ```{r plotly1, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
 
-plot_ly(x = unlist(x = map(Merimee$geometry,1)), 
-               y = unlist(map(Merimee$geometry,2)), 
+plot_ly(x = unlist(x = map(Merimee$geometry, 1)), 
+               y = unlist(map(Merimee$geometry, 2)), 
                z = as.numeric(Merimee$chpdate),
                color= as.numeric(Merimee$chpdate),
-               size=0.5) %>% add_markers() %>% 
-layout(scene = list(xaxis = list(title = 'longitude'),
+               size = 0.5) %>% 
+  add_markers() %>% 
+  layout(scene = list(xaxis = list(title = 'longitude'),
                     yaxis = list(title = 'latitude'),
                     zaxis = list(title = 'Année de construction')))
 
@@ -716,9 +723,9 @@ Les méthodes de groupement d'événements en fonction de leur proximité spatio
 
 ########################################################################
 # ST-DBSCAN : An algorithm for clustering spatial-temporal data        #
-# (Birant and Kut, 2006)                                 #
-# Application on a trajectory                           #
-# https://github.com/Kersauson/ST-DBSCAN/blob/master/stdbscan.R #
+# (Birant and Kut, 2006)                                               #
+# Application on a trajectory                                          #
+# https://github.com/Kersauson/ST-DBSCAN/blob/master/stdbscan.R        #
 ########################################################################
 
 
@@ -813,8 +820,8 @@ Nous indiquons ici les **coordonnées en longitude et latitude** des bâtiments 
 
 ```{r, echo=TRUE, message=FALSE, warning=FALSE, cache=TRUE}
 
-Merimee$lon <- unlist(map(Merimee$geometry,1))
-Merimee$lat <- unlist(map(Merimee$geometry,2))
+Merimee$lon <- unlist(map(Merimee$geometry, 1))
+Merimee$lat <- unlist(map(Merimee$geometry, 2))
 
 spatiotemp_clust <- stdbscan(x = Merimee$lon, 
                              y = Merimee$lat, 
@@ -846,13 +853,14 @@ Merimee$cluster <- spatiotemp_clust$cluster
 # Création d'une palette de couleurs 
 getPalette <- colorRampPalette(brewer.pal(7, "Set1"))
 
-plot_ly(x = unlist(x = map(Merimee$geometry,1)), 
-               y = unlist(map(Merimee$geometry,2)), 
+plot_ly(x = unlist(x = map(Merimee$geometry, 1)), 
+               y = unlist(map(Merimee$geometry, 2)), 
                z = as.numeric(Merimee$chpdate),
-               color= as.factor(Merimee$cluster),
-                colors = getPalette(length(unique(Merimee$cluster))),
-               size=0.6) %>% add_markers() %>% 
-layout(scene = list(xaxis = list(title = 'Longitude'),
+               color = as.factor(Merimee$cluster),
+               colors = getPalette(length(unique(Merimee$cluster))),
+               size = 0.6) %>% 
+  add_markers() %>% 
+  layout(scene = list(xaxis = list(title = 'Longitude'),
                     yaxis = list(title = 'Latitude'),
                     zaxis = list(title = 'Année de construction')))
 
@@ -883,7 +891,7 @@ kableExtra::kable_styling(knitr::kable(rzine::sessionRzine()[[2]], row.names = F
 
 ## Citation {-}
 
-```{r ReadCitation, echo=FALSE}
+```{r Citation, echo=FALSE}
 
 rref <- bibentry(
    bibtype = "misc",
@@ -902,7 +910,8 @@ rref <- bibentry(
 
 ```{r generateBibTex, echo=FALSE}
 
-print(rref, style = "Bibtex")
+writeLines(toBibtex(rref), "cite.bib")
+toBibtex(rref)
 
 ``` 
 
