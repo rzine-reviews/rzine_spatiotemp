@@ -17,7 +17,7 @@ nocite: |
 link-citations: yes
 github: "rzine-reviews/rzine_spatiotemp"
 # gitlab: "gitlab.huma-num.fr/author/repository"
-# doi: "10.5281/zenodo.4554776"
+doi: "10.48645/vrmv-ja14"
 licence: "by-sa"
 # 5 possible choices : "by-nd", "by", "by-nc-sa", "by-nc","by-sa"
 ---
