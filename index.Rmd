@@ -895,7 +895,7 @@ kableExtra::kable_styling(knitr::kable(rzine::sessionRzine()[[2]], row.names = F
 ```{r Citation, echo=FALSE}
 
 rref <- bibentry(
-   bibtype = "misc",
+   bibtype = "article",
    title = "Exploration spatio-temporelle d’objets géographiques ponctuels",
    author = person("Marion Le Texier"),
    journal = "Rzine",
