@@ -37,9 +37,9 @@ knitr::opts_chunk$set(echo=TRUE,
 
 ```
 
-# Introduction {-}
 
-Cette fiche rend compte d'une série de traitements permettant d'explorer la [base de données MERIMEE](https://www.culture.gouv.fr/Espace-documentation/Base-de-donnees-Culture/Merimee-une-base-de-donnees-du-patrimoine-monumental-francais-de-la-Prehistoire-a-nos-jours){target="_blank"} qui consigne l'ensemble des bâtiments classés aux monuments historiques. Nous prendrons l'exemple des fiches "Mérimée" du patrimoine architectural toulousain disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/base-merimee/).
+
+> Cette fiche rend compte d'une série de traitements permettant d'explorer la [base de données MERIMEE](https://www.culture.gouv.fr/Espace-documentation/Base-de-donnees-Culture/Merimee-une-base-de-donnees-du-patrimoine-monumental-francais-de-la-Prehistoire-a-nos-jours){target="_blank"} qui consigne l'ensemble des bâtiments classés aux monuments historiques. Nous prenons l'exemple des fiches "Mérimée" du patrimoine architectural toulousain disponibles sur le site [data.gouv.fr](https://www.data.gouv.fr/fr/datasets/base-merimee/).
 
 # Préparation de l'analyse
 
@@ -895,13 +895,17 @@ kableExtra::kable_styling(knitr::kable(rzine::sessionRzine()[[2]], row.names = F
 ```{r Citation, echo=FALSE}
 
 rref <- bibentry(
-   bibtype = "article",
+   bibtype = "misc",
    title = "Exploration spatio-temporelle d’objets géographiques ponctuels",
-   author = person("Marion Le Texier"),
-   journal = "Rzine",
-   publisher = "FR CIST",
+   subtitle = "L’exemple du patrimoine architectural toulousain",
+   author = c("Marion Le Texier"),
+   doi = "10.48645/vrmv-ja14",
+   url = "https://rzine.fr/publication_rzine/20200601_mletexier86_explo_spatiotemporel/",
+   keywords ="FOS: Other social sciences",
+   language = "fr",
+   publisher = "FR2007 CIST",
    year = 2021,
-   url = "https://rzine.fr/docs/20200601_mletexier86_explo_spatiotemporel/index.html")
+   copyright = "Creative Commons Attribution Share Alike 4.0 International")
 
 ``` 
 
