@@ -127,7 +127,7 @@ invisible(lapply(my_packages, library,  character.only = TRUE))
 
 
 <br>   
-<p class="center">[<span style="font-size: 230%;" class="glyphicon glyphicon-download-alt"></span> <br/> Télécharger les données](https://github.com/rzine-reviews/rzine_spatiotemp/raw/main/data.zip)</p>
+<p class="center">[<span style="font-size: 230%;" class="glyphicon glyphicon-download-alt"></span> <br/> Télécharger les données](https://rzine.fr/docs/20200601_mletexier86_explo_spatiotemporel/data.zip)</p>
 
 <br>
 
