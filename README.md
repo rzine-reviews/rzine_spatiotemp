@@ -1,4 +1,4 @@
-# Exploration spatio-temporelle d’objets géographiques ponctuels [<img src="https://rzine.fr/img/Rzine_logo.png"  align="right" width="120"/>](http://rzine.fr/)
+# Exploration spatio-temporelle d’objets géographiques ponctuels  [<img src="https://rzine.fr/assets/img/rzine.png"  align="right" width="120"/>](http://rzine.fr/)
 ### L’exemple du patrimoine architectural toulousain
 **Marion Le Texier (Université Rouen Normandie, UMR 6266 IDEES)**
 <br/>  
